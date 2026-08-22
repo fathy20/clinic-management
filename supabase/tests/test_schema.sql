@@ -1,5 +1,5 @@
--- Paste into the Supabase SQL editor after schema.sql AND
--- migrations/0001_phase1_reception.sql have both been applied. Rolls itself back.
+-- Paste into the Supabase SQL editor after schema.sql AND every migration in
+-- migrations/ (0001, 0002, 0003) have been applied. Rolls itself back.
 -- Needs at least one row in auth.users (sign up once first).
 begin;
 
@@ -8,6 +8,7 @@ declare
   c uuid; p uuid; t uuid; k uuid; a uuid; a3 uuid; n int;
   k2 uuid; pay1 uuid; pay2 uuid; bal numeric; owed numeric;
   c2 uuid; p2 uuid; p3 uuid; k3 uuid;
+  cur text; tbl text; q text; wc text;
 begin
   select id into t from auth.users limit 1;
   if t is null then raise exception 'sign up a user first'; end if;
@@ -132,6 +133,47 @@ begin
   exception when others then
     if sqlerrm not like 'appointment package belongs to a different patient%' then raise; end if;
   end;
+
+  -- 8. foundation (0002/0003): per-clinic currency and the accountant role,
+  --    verified against the live catalog rather than trusted from the file.
+  select currency into cur from clinics where id = c;
+  if cur <> 'EGP' then
+    raise exception 'FAIL: clinic currency default expected EGP, got %', cur;
+  end if;
+
+  begin
+    update clinics set currency = 'egp' where id = c;
+    raise exception 'FAIL: a lowercase currency code was accepted';
+  exception when check_violation then null;
+  end;
+
+  if not exists (
+    select 1 from pg_enum e
+    join pg_type ty on ty.oid = e.enumtypid
+    where ty.typname = 'clinic_role' and e.enumlabel = 'accountant'
+  ) then
+    raise exception 'FAIL: clinic_role has no accountant value (0002 not applied)';
+  end if;
+
+  -- The accountant sees the till; the therapist never does. Both the read
+  -- (qual) and the write (with_check) half of each policy are checked — one
+  -- of the two left open is the whole breach.
+  foreach tbl in array array['packages','payments','refunds'] loop
+    select pol.qual, pol.with_check into q, wc
+      from pg_policies pol
+      where pol.schemaname = 'public'
+        and pol.tablename = tbl
+        and pol.policyname = 'tenant';
+    if q is null or wc is null then
+      raise exception 'FAIL: % has no tenant policy with both halves', tbl;
+    end if;
+    if q not like '%accountant%' or wc not like '%accountant%' then
+      raise exception 'FAIL: % policy does not include the accountant', tbl;
+    end if;
+    if q like '%therapist%' or wc like '%therapist%' then
+      raise exception 'FAIL: % policy names the therapist', tbl;
+    end if;
+  end loop;
 
   raise notice 'all checks passed';
 end $$;

@@ -2,8 +2,10 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
+import { Field, SelectField } from "@/components/ui/Field";
 import { Money } from "@/components/ui/Money";
 import { Sheet } from "@/components/ui/Sheet";
+import { formatMoney } from "@/lib/money";
 import { getPatientPackages, takePayment } from "./actions";
 import type { DayRow } from "./types";
 import { t } from "@/lib/strings";
@@ -24,10 +26,12 @@ const METHODS = [
 export function PaymentSheet({
   clinicId,
   row,
+  currency,
   onClose,
 }: {
   clinicId: string;
   row: DayRow;
+  currency: string;
   onClose: () => void;
 }) {
   const [packages, setPackages] = useState<PackageOption[]>([]);
@@ -80,7 +84,7 @@ export function PaymentSheet({
           {row.amountOwed > 0 && (
             <>
               {` · ${t("due")} `}
-              <Money amount={row.amountOwed} />
+              <Money amount={row.amountOwed} currency={currency} />
             </>
           )}
         </>
@@ -90,41 +94,31 @@ export function PaymentSheet({
         <>
           <Button onClick={onClose}>{t("cancel")}</Button>
           <Button variant="money" onClick={submit} disabled={pending}>
-            {total > 0 ? `${t("take")} ${total.toFixed(2)}` : t("take")}
+            {total > 0 ? `${t("take")} ${formatMoney(total, currency)}` : t("take")}
           </Button>
         </>
       }
     >
-      <div>
-        <label className="fieldlabel" htmlFor="pkg">
-          {t("packageOptional")}
-        </label>
-        <select
-          id="pkg"
-          className="field"
-          value={packageId}
-          onChange={(e) => setPackageId(e.target.value)}
-        >
-          <option value="">{t("noPackageSingleSession")}</option>
-          {packages.map((p) => (
-            <option key={p.id} value={p.id}>
-              {t("packageOf", { n: p.sessions_total })} ·{" "}
-              {t("sessionsLeft", { n: p.sessions_total - p.sessions_used })} ·{" "}
-              {p.price}
-            </option>
-          ))}
-        </select>
-        {packageId && (
-          <p className="hint" style={{ marginTop: 6 }}>
-            {t("paymentGoesToPackage")}
-          </p>
-        )}
-      </div>
+      <SelectField
+        id="pkg"
+        label={t("packageOptional")}
+        hint={packageId ? t("paymentGoesToPackage") : undefined}
+        value={packageId}
+        onChange={(e) => setPackageId(e.target.value)}
+      >
+        <option value="">{t("noPackageSingleSession")}</option>
+        {packages.map((p) => (
+          <option key={p.id} value={p.id}>
+            {t("packageOf", { n: p.sessions_total })} ·{" "}
+            {t("sessionsLeft", { n: p.sessions_total - p.sessions_used })} ·{" "}
+            {p.price}
+          </option>
+        ))}
+      </SelectField>
 
       {tenders.map((tender, i) => (
         <div key={i} className={tenders.length > 1 ? "tender removable" : "tender"}>
-          <select
-            className="field"
+          <SelectField
             value={tender.method}
             aria-label={t("method")}
             onChange={(e) =>
@@ -138,9 +132,9 @@ export function PaymentSheet({
                 {m.label}
               </option>
             ))}
-          </select>
-          <input
-            className="field amount"
+          </SelectField>
+          <Field
+            amount
             inputMode="decimal"
             placeholder="0.00"
             aria-label={t("amount")}
@@ -174,7 +168,7 @@ export function PaymentSheet({
 
       <div className="tally">
         <span className="lbl">{t("total")}</span>
-        <Money amount={total} size="lg" withLabel />
+        <Money amount={total} currency={currency} size="lg" withLabel />
       </div>
 
       {error && <p className="formerror">{error}</p>}

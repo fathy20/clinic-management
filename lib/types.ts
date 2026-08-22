@@ -1,5 +1,16 @@
 export type ApptStatus = "booked" | "attended" | "no_show" | "cancelled";
-export type ClinicRole = "owner" | "reception" | "therapist";
+export type ClinicRole =
+  | "owner"
+  | "reception"
+  | "therapist"
+  | "accountant";
+
+export type Clinic = {
+  id: string;
+  name: string;
+  currency: string; // ISO 4217. The clinic row owns it, never a constant.
+  created_at: string;
+};
 
 export type Patient = {
   id: string;

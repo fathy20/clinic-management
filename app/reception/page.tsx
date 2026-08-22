@@ -1,3 +1,4 @@
+import { canSeeMoney } from "@/lib/roles";
 import { createClient } from "@/lib/supabase/server";
 import { DayBoard } from "./DayBoard";
 import { MoneyRail } from "./MoneyRail";
@@ -107,7 +108,11 @@ export default async function ReceptionPage() {
 
   const [{ data: clinic }, { data: staff }, { data: myProfile }] =
     await Promise.all([
-      supabase.from("clinics").select("name").eq("id", clinicId).single(),
+      supabase
+        .from("clinics")
+        .select("name, currency")
+        .eq("id", clinicId)
+        .single(),
       supabase
         .from("memberships")
         .select("user_id, default_session_minutes")
@@ -200,7 +205,11 @@ export default async function ReceptionPage() {
     };
   });
 
-  const canSeeMoney = role === "owner" || role === "reception";
+  // Currency comes off the clinic row. The fallback covers only the window
+  // between deploying this code and applying migration 0002 — after that the
+  // column is not null.
+  const currency = clinic?.currency ?? "EGP";
+  const showMoney = canSeeMoney(role);
 
   const attended = rows.filter((r) => r.status === "attended").length;
   const missed = rows.filter((r) => r.status === "no_show").length;
@@ -220,11 +229,12 @@ export default async function ReceptionPage() {
               rows={rows}
               therapists={therapists}
               clinicId={clinicId}
-              canSeeMoney={canSeeMoney}
+              canSeeMoney={showMoney}
+              currency={currency}
               counts={{ waiting, attended, missed, total: rows.length }}
             />
           </div>
-          {canSeeMoney && <MoneyRail clinicId={clinicId} />}
+          {showMoney && <MoneyRail clinicId={clinicId} currency={currency} />}
         </div>
       </Shell>
     </>

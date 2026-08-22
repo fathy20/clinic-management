@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
+import { Field, SelectField } from "@/components/ui/Field";
 import { Money } from "@/components/ui/Money";
 import { Sheet } from "@/components/ui/Sheet";
 import { getPatientPayments, issueRefund } from "./actions";
@@ -30,9 +31,11 @@ const METHOD_LABEL: Record<string, string> = {
 
 export function RefundSheet({
   row,
+  currency,
   onClose,
 }: {
   row: DayRow;
+  currency: string;
   onClose: () => void;
 }) {
   const [payments, setPayments] = useState<PaymentOption[]>([]);
@@ -94,60 +97,49 @@ export function RefundSheet({
         <p className="empty">{t("noPaymentsYet")}</p>
       ) : (
         <>
-          <div>
-            <label className="fieldlabel" htmlFor="pay">
-              {t("payment")}
-            </label>
-            <select
-              id="pay"
-              className="field"
-              value={paymentId}
-              onChange={(e) => {
-                setPaymentId(e.target.value);
-                const p = payments.find((x) => x.id === e.target.value);
-                if (p) setAmount(String(p.amount));
-              }}
-            >
-              {payments.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.amount} · {METHOD_LABEL[p.method] ?? p.method} ·{" "}
-                  {DATE_FMT.format(new Date(p.paid_at))}
-                </option>
-              ))}
-            </select>
-          </div>
+          <SelectField
+            id="pay"
+            label={t("payment")}
+            value={paymentId}
+            onChange={(e) => {
+              setPaymentId(e.target.value);
+              const p = payments.find((x) => x.id === e.target.value);
+              if (p) setAmount(String(p.amount));
+            }}
+          >
+            {payments.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.amount} · {METHOD_LABEL[p.method] ?? p.method} ·{" "}
+                {DATE_FMT.format(new Date(p.paid_at))}
+              </option>
+            ))}
+          </SelectField>
 
-          <div>
-            <label className="fieldlabel" htmlFor="amt">
-              {t("refundAmount")}
-            </label>
-            <input
-              id="amt"
-              className="field amount"
-              inputMode="decimal"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-            {selected && (
-              <p className="hint" style={{ marginTop: 6 }}>
-                {t("maxRefundableBefore")} <Money amount={selected.amount} />
-                {t("maxRefundableAfter")}
-              </p>
-            )}
-          </div>
+          <Field
+            id="amt"
+            amount
+            label={t("refundAmount")}
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            hint={
+              selected ? (
+                <>
+                  {t("maxRefundableBefore")}{" "}
+                  <Money amount={selected.amount} currency={currency} />
+                  {t("maxRefundableAfter")}
+                </>
+              ) : undefined
+            }
+          />
 
-          <div>
-            <label className="fieldlabel" htmlFor="why">
-              {t("reason")}
-            </label>
-            <input
-              id="why"
-              className="field"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder={t("reasonPlaceholder")}
-            />
-          </div>
+          <Field
+            id="why"
+            label={t("reason")}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={t("reasonPlaceholder")}
+          />
         </>
       )}
 

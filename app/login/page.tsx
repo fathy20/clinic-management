@@ -1,3 +1,4 @@
+import { Field } from "@/components/ui/Field";
 import { signIn } from "./actions";
 import { t } from "@/lib/strings";
 
@@ -47,34 +48,24 @@ export default async function LoginPage({
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div>
-            <label className="fieldlabel" htmlFor="email">
-              {t("email")}
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              dir="ltr"
-              required
-              autoComplete="username"
-              className="field"
-            />
-          </div>
+          <Field
+            id="email"
+            name="email"
+            type="email"
+            dir="ltr"
+            required
+            autoComplete="username"
+            label={t("email")}
+          />
 
-          <div>
-            <label className="fieldlabel" htmlFor="password">
-              {t("password")}
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              className="field"
-            />
-          </div>
+          <Field
+            id="password"
+            name="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            label={t("password")}
+          />
 
           <button type="submit" className="btn btn-primary" style={{ width: "100%" }}>
             {t("signIn")}

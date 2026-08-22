@@ -4,7 +4,8 @@
 
 Project `qasonherbwrbzlrdzegk` is set up and verified end-to-end. Done:
 
-- Schema + Phase 1 migration applied (all 8 tables, all views, all triggers).
+- Schema + migration 0001 applied (all 8 tables, all views, all triggers).
+  **Migrations 0002 and 0003 are written but NOT yet applied — see below.**
 - One clinic ("My Clinic") with an owner account and a therapist account.
 - `.env.local` written with the project URL + publishable key.
 - The app runs, login works, and the reception screen renders real data from
@@ -34,10 +35,38 @@ publishable (anon) key, not the secret key:
 All test data was deleted afterwards. The project now holds one clinic, two
 staff accounts, and zero patients/appointments/payments.
 
+### Not yet applied to the live project
+
+`0002_foundation.sql` (per-clinic `currency`, the `accountant` enum value) and
+`0003_accountant_policies.sql` (the money-table policies that name it) are in
+`supabase/migrations/` but have not been run against
+`qasonherbwrbzlrdzegk`. They must be applied **as two separate runs**, in
+order — 0002 adds the enum value, and Postgres refuses to reference a value
+added by `alter type ... add value` inside the same transaction, which the SQL
+editor wraps a paste in. Running them together fails with "unsafe use of new
+value of enum type", which reads like a syntax error and isn't.
+
+The app tolerates the gap in one direction only: `currency` falls back to
+`'EGP'` when the column is missing, so the reception screen still renders. An
+account with `role = 'accountant'` cannot exist until 0002 is applied.
+
+After applying both, re-run the checks that the role change could affect —
+this is SPEC.md §8.4, and none of it has been done yet:
+
+1. `supabase/tests/test_schema.sql` still prints `all checks passed` (it now
+   also checks the currency default, the shape constraint, the enum value, and
+   both halves of each money policy).
+2. Clinic A reading clinic B still returns 0 rows.
+3. `therapist` still returns 0 rows from `payments` / `packages` / `refunds`.
+4. A new `accountant` returns rows from `payments` and 0 rows from any
+   clinical table.
+
 ### If you ever rebuild this from scratch
 
-`supabase/deploy_all.sql` is schema + migration in one paste-and-Run file for
-the SQL Editor. `supabase/schema.sql` and `supabase/migrations/` remain the
+`supabase/deploy_all.sql` is schema + all three migrations in one
+paste-and-Run file for the SQL Editor (it declares `accountant` in the enum
+directly, so the single-transaction problem above doesn't arise on a fresh
+install). `supabase/schema.sql` and `supabase/migrations/` remain the
 source of truth for future changes — add a new migration, never edit an
 applied one.
 
@@ -86,7 +115,10 @@ this isn't in Phase 1 and shouldn't be built until it's actually needed.
 - Money-mutating triggers (`consume_package`, `refund_guard`) are
   `security definer` so they work correctly regardless of which role
   (owner/reception/therapist) triggered them, but user-facing writes to
-  `packages`/`payments`/`refunds` are still RLS-gated to owner/reception.
+  `packages`/`payments`/`refunds` are still RLS-gated — to owner/reception,
+  and to accountant once 0003 is applied. `lib/roles.ts` is the app-side
+  mirror of that list, and `tests/accountant-role.test.ts` fails if the two
+  ever disagree.
 - Cross-tenant AND cross-patient linkage guards on appointments/packages/
   payments — a patient/package can't be attached to the wrong clinic *or* the
   wrong patient within the same clinic.

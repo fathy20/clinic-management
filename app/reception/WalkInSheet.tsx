@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
+import { Field, SelectField } from "@/components/ui/Field";
 import { Sheet } from "@/components/ui/Sheet";
 import { addWalkIn, getPatientPackages, searchPatients } from "./actions";
 import type { Therapist } from "./types";
@@ -120,18 +121,13 @@ export function WalkInSheet({
         </div>
       ) : (
         <>
-          <div>
-            <label className="fieldlabel" htmlFor="q">
-              {t("existingPatient")}
-            </label>
-            <input
-              id="q"
-              className="field"
-              placeholder={t("searchByNameOrPhone")}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
+          <Field
+            id="q"
+            label={t("existingPatient")}
+            placeholder={t("searchByNameOrPhone")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
 
           {hits.length > 0 && (
             <div className="results">
@@ -151,20 +147,14 @@ export function WalkInSheet({
             </div>
           )}
 
-          <div>
-            <label className="fieldlabel" htmlFor="nm">
-              {t("orNewPatient")}
-            </label>
-            <input
-              id="nm"
-              className="field"
-              placeholder={t("name")}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-          <input
-            className="field"
+          <Field
+            id="nm"
+            label={t("orNewPatient")}
+            placeholder={t("name")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <Field
             placeholder={t("phone")}
             dir="ltr"
             inputMode="tel"
@@ -183,58 +173,44 @@ export function WalkInSheet({
         </>
       )}
 
-      <div>
-        <label className="fieldlabel" htmlFor="th">
-          {t("therapist")}
-        </label>
-        <select
-          id="th"
-          className="field"
-          value={therapistId}
-          onChange={(e) => pickTherapist(e.target.value)}
-        >
-          {therapists.length === 0 && <option value="">{t("noTherapists")}</option>}
-          {therapists.map((th) => (
-            <option key={th.id} value={th.id}>
-              {th.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      <SelectField
+        id="th"
+        label={t("therapist")}
+        value={therapistId}
+        onChange={(e) => pickTherapist(e.target.value)}
+      >
+        {therapists.length === 0 && <option value="">{t("noTherapists")}</option>}
+        {therapists.map((th) => (
+          <option key={th.id} value={th.id}>
+            {th.name}
+          </option>
+        ))}
+      </SelectField>
 
-      <div>
-        <label className="fieldlabel" htmlFor="dur">
-          {t("sessionMinutes")}
-        </label>
-        <input
-          id="dur"
-          className="field amount"
-          inputMode="numeric"
-          value={duration}
-          onChange={(e) => setDuration(Number(e.target.value))}
-        />
-      </div>
+      <Field
+        id="dur"
+        amount
+        label={t("sessionMinutes")}
+        inputMode="numeric"
+        value={duration}
+        onChange={(e) => setDuration(Number(e.target.value))}
+      />
 
       {picked && packages.length > 0 && (
-        <div>
-          <label className="fieldlabel" htmlFor="pk">
-            {t("underPackage")}
-          </label>
-          <select
-            id="pk"
-            className="field"
-            value={packageId}
-            onChange={(e) => setPackageId(e.target.value)}
-          >
-            <option value="">{t("noSingleSession")}</option>
-            {packages.map((p) => (
-              <option key={p.id} value={p.id}>
-                {t("packageOf", { n: p.sessions_total })} ·{" "}
-                {t("sessionsLeft", { n: p.sessions_total - p.sessions_used })}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectField
+          id="pk"
+          label={t("underPackage")}
+          value={packageId}
+          onChange={(e) => setPackageId(e.target.value)}
+        >
+          <option value="">{t("noSingleSession")}</option>
+          {packages.map((p) => (
+            <option key={p.id} value={p.id}>
+              {t("packageOf", { n: p.sessions_total })} ·{" "}
+              {t("sessionsLeft", { n: p.sessions_total - p.sessions_used })}
+            </option>
+          ))}
+        </SelectField>
       )}
 
       {error && <p className="formerror">{error}</p>}

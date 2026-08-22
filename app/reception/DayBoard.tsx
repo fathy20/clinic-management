@@ -30,12 +30,14 @@ export function DayBoard({
   therapists,
   clinicId,
   canSeeMoney,
+  currency,
   counts,
 }: {
   rows: DayRow[];
   therapists: Therapist[];
   clinicId: string;
   canSeeMoney: boolean;
+  currency: string;
   counts: { waiting: number; attended: number; missed: number; total: number };
 }) {
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -199,7 +201,7 @@ export function DayBoard({
           <div className="cell">
             <div className="label">{t("owedByPatients")}</div>
             <div className="value">
-              <Money amount={owedTotal} size="lg" />
+              <Money amount={owedTotal} currency={currency} size="lg" />
             </div>
             <div className="foot">
               {t("acrossNPatients", {
@@ -301,11 +303,16 @@ export function DayBoard({
         <PaymentSheet
           clinicId={clinicId}
           row={sheet.row}
+          currency={currency}
           onClose={() => setSheet(null)}
         />
       )}
       {sheet?.kind === "refund" && (
-        <RefundSheet row={sheet.row} onClose={() => setSheet(null)} />
+        <RefundSheet
+          row={sheet.row}
+          currency={currency}
+          onClose={() => setSheet(null)}
+        />
       )}
       {sheet?.kind === "walkin" && (
         <WalkInSheet

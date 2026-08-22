@@ -18,7 +18,13 @@ function fmt(d: string | null) {
 // Server component: reads the two views that answer "where is my money".
 // Both are security_invoker, so a therapist reaching this code path gets
 // zero rows rather than another clinic's numbers.
-export async function MoneyRail({ clinicId }: { clinicId: string }) {
+export async function MoneyRail({
+  clinicId,
+  currency,
+}: {
+  clinicId: string;
+  currency: string;
+}) {
   const supabase = await createClient();
 
   const [{ data: leaks }, { data: stale }] = await Promise.all([
@@ -58,7 +64,7 @@ export async function MoneyRail({ clinicId }: { clinicId: string }) {
                   {t("sessionOn", { date: fmt(l.session_date) })}
                 </div>
               </div>
-              <Money amount={Number(l.amount_owed)} />
+              <Money amount={Number(l.amount_owed)} currency={currency} />
             </div>
           ))
         )}
@@ -66,7 +72,7 @@ export async function MoneyRail({ clinicId }: { clinicId: string }) {
         {total > 0 && (
           <div className="paneltotal">
             <span className="lbl">{t("totalOwed")}</span>
-            <Money amount={total} size="lg" withLabel />
+            <Money amount={total} currency={currency} size="lg" withLabel />
           </div>
         )}
       </div>

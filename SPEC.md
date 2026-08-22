@@ -137,6 +137,23 @@ tests/
   accountant-role.test.ts     -- accountant sees payments; therapist does not
 ```
 
+## 5a. Built, and two deviations from the file list above
+
+- `Row.tsx` was not created. The patient row is `app/reception/PatientRow.tsx`
+  and reception is its only caller; a second copy in `components/ui/` would be
+  an abstraction with one caller. It moves to `components/ui/` the first time
+  a second screen needs a row.
+- `useHotkeys.ts` was not created. The `/`-Esc-arrows-Enter handling lives in
+  `DayBoard.tsx`, which is still its only caller. Same reasoning; extract it
+  when the scheduling screen needs the same keys.
+- `Field.tsx` was created and exports `Field` + `SelectField`. Every labelled
+  control in the three sheets and the login form goes through it. The one
+  exception is the queue search input in `DayBoard.tsx`, which needs a ref for
+  `/` to focus it.
+- `lib/roles.ts` was added (not in the list above): `MONEY_ROLES` /
+  `canSeeMoney`, the app-side mirror of the money policies, so the SQL and the
+  UI can be asserted to agree instead of drifting.
+
 ## 6. Out of scope for this phase
 
 Ask before building any of these:

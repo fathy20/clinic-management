@@ -1,8 +1,15 @@
--- Everything Phase 1 needs, in one paste: schema.sql + migrations/0001.
--- This file exists only to make first-time setup a single copy/paste/Run in
--- the Supabase SQL Editor. It is not a migration itself — supabase/schema.sql
--- and supabase/migrations/0001_phase1_reception.sql remain the source of
--- truth for any future change.
+-- Everything Phase 1 needs, in one paste: schema.sql + migrations/0001,
+-- 0002 and 0003. This file exists only to make first-time setup a single
+-- copy/paste/Run in the Supabase SQL Editor. It is not a migration itself —
+-- supabase/schema.sql and supabase/migrations/* remain the source of truth
+-- for any future change.
+--
+-- One deliberate difference from the migrations: 'accountant' is declared in
+-- the enum below instead of being added by `alter type ... add value` as
+-- 0002 does. The editor runs this paste as one transaction, and a value added
+-- by add-value cannot be referenced in the same transaction — the policies at
+-- the bottom reference it. A value declared in `create type` has no such
+-- restriction, so a fresh install gets the same end state either way.
 
 -- ============================================================
 -- schema.sql
@@ -18,7 +25,7 @@ create table clinics (
   created_at  timestamptz not null default now()
 );
 
-create type clinic_role as enum ('owner', 'reception', 'therapist');
+create type clinic_role as enum ('owner', 'reception', 'therapist', 'accountant');
 
 create table memberships (
   user_id    uuid not null references auth.users on delete cascade,
@@ -385,4 +392,30 @@ alter view leaking_sessions  set (security_invoker = on);
 alter view package_balances  set (security_invoker = on);
 alter view patient_balances  set (security_invoker = on);
 
-select 'Phase 1 schema applied successfully.' as result;
+-- ============================================================
+-- migrations/0002_foundation.sql + 0003_accountant_policies.sql
+-- (the enum value itself is already declared above — see the header)
+-- ============================================================
+
+alter table clinics
+  add column currency char(3) not null default 'EGP'
+    check (currency ~ '^[A-Z]{3}$');
+
+-- The accountant sees the till, never the clinical record. Replaces the
+-- owner/reception-only policies created above.
+drop policy if exists tenant on packages;
+create policy tenant on packages for all
+  using (my_role(clinic_id) in ('owner','reception','accountant'))
+  with check (my_role(clinic_id) in ('owner','reception','accountant'));
+
+drop policy if exists tenant on payments;
+create policy tenant on payments for all
+  using (my_role(clinic_id) in ('owner','reception','accountant'))
+  with check (my_role(clinic_id) in ('owner','reception','accountant'));
+
+drop policy if exists tenant on refunds;
+create policy tenant on refunds for all
+  using (my_role(clinic_id) in ('owner','reception','accountant'))
+  with check (my_role(clinic_id) in ('owner','reception','accountant'));
+
+select 'Phase 1 + foundation schema applied successfully.' as result;
