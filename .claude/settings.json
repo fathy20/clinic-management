@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "for f in supabase/migrations/*.sql; do grep -qi 'create table' \"$f\" || continue; grep -qi 'enable row level security' \"$f\" || { echo \"BLOCKED: $f creates a table without enabling RLS\" >&2; exit 2; }; done"
+          }
+        ]
+      }
+    ]
+  }
+}

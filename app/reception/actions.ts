@@ -1,0 +1,187 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { t } from "@/lib/strings";
+
+async function requireSession() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+  if (error || !user) throw new Error("not authenticated");
+  return { supabase, user };
+}
+
+// Never touches payments/packages — the debt indicator (patient_balances)
+// is what surfaces an attended-but-unpaid session. Attendance must always
+// succeed regardless of payment state.
+export async function markAttended(appointmentId: string) {
+  const { supabase } = await requireSession();
+  const { error } = await supabase
+    .from("appointments")
+    .update({ status: "attended" })
+    .eq("id", appointmentId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/reception");
+}
+
+export async function markNoShow(appointmentId: string) {
+  const { supabase } = await requireSession();
+  const { error } = await supabase
+    .from("appointments")
+    .update({ status: "no_show" })
+    .eq("id", appointmentId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/reception");
+}
+
+export async function addWalkIn(input: {
+  clinicId: string;
+  therapistId: string;
+  patientId?: string;
+  newPatient?: { name: string; phone: string };
+  packageId?: string | null;
+  durationMinutes: number;
+}) {
+  const { supabase } = await requireSession();
+
+  let patientId = input.patientId;
+  if (!patientId) {
+    if (!input.newPatient) throw new Error("patient or newPatient required");
+    const { data, error } = await supabase
+      .from("patients")
+      .insert({
+        clinic_id: input.clinicId,
+        name: input.newPatient.name,
+        phone: input.newPatient.phone,
+        consent_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    patientId = data.id;
+  }
+
+  const start = new Date();
+  const end = new Date(start.getTime() + input.durationMinutes * 60_000);
+  const during = `[${start.toISOString()},${end.toISOString()})`;
+
+  const { error } = await supabase.from("appointments").insert({
+    clinic_id: input.clinicId,
+    patient_id: patientId,
+    therapist_id: input.therapistId,
+    during,
+    package_id: input.packageId ?? null,
+  });
+  if (error) {
+    // exclusion_violation: the DB, not the UI, is what refused the overlap
+    if (error.code === "23P01") {
+      throw new Error(t("therapistBusy"));
+    }
+    throw new Error(error.message);
+  }
+  revalidatePath("/reception");
+}
+
+// ilike wildcards in the user's own input would otherwise turn "50%" or
+// "a_b" into unintended pattern matches instead of literal search terms.
+function escapeLike(value: string) {
+  return value.replace(/[%_\\]/g, (c) => `\\${c}`);
+}
+
+export async function searchPatients(clinicId: string, query: string) {
+  const { supabase } = await requireSession();
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+  const isPhone = /^[0-9]+$/.test(trimmed);
+  const pattern = `%${escapeLike(trimmed)}%`;
+  const base = supabase
+    .from("patients")
+    .select("id, name, phone")
+    .eq("clinic_id", clinicId)
+    .limit(10);
+  const { data, error } = isPhone
+    ? await base.ilike("phone", pattern)
+    : await base.ilike("name", pattern);
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function getPatientPackages(patientId: string) {
+  const { supabase } = await requireSession();
+  const { data, error } = await supabase
+    .from("packages")
+    .select("id, sessions_total, sessions_used, price, expires_at")
+    .eq("patient_id", patientId);
+  if (error) throw new Error(error.message);
+  return data.filter((p) => p.sessions_used < p.sessions_total);
+}
+
+export async function getPatientPayments(patientId: string) {
+  const { supabase } = await requireSession();
+  const { data, error } = await supabase
+    .from("payments")
+    .select("id, amount, method, paid_at, package_id")
+    .eq("patient_id", patientId)
+    .order("paid_at", { ascending: false })
+    .limit(20);
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function takePayment(input: {
+  clinicId: string;
+  patientId: string;
+  packageId?: string | null;
+  appointmentId?: string | null;
+  rows: { method: string; amount: number }[];
+}) {
+  const { supabase, user } = await requireSession();
+  if (input.rows.length === 0) {
+    throw new Error("at least one payment row required");
+  }
+
+  const groupId = crypto.randomUUID();
+  const { error } = await supabase.from("payments").insert(
+    input.rows.map((r) => ({
+      clinic_id: input.clinicId,
+      patient_id: input.patientId,
+      package_id: input.packageId ?? null,
+      // only linked to a specific appointment when it's a plain (non-package)
+      // session payment — that link is what leaking_sessions matches against.
+      appointment_id: input.packageId ? null : input.appointmentId ?? null,
+      amount: r.amount,
+      method: r.method,
+      taken_by: user.id,
+      group_id: groupId,
+    }))
+  );
+  if (error) throw new Error(error.message);
+  revalidatePath("/reception");
+}
+
+export async function issueRefund(input: {
+  paymentId: string;
+  amount: number;
+  reason: string;
+}) {
+  const { supabase, user } = await requireSession();
+  // clinic_id is deliberately omitted: the refund_guard trigger derives it
+  // from the referenced payment and overwrites whatever is sent here, so
+  // that a refund can never claim a clinic other than the payment's own.
+  const { error } = await supabase.from("refunds").insert({
+    payment_id: input.paymentId,
+    amount: input.amount,
+    reason: input.reason,
+    taken_by: user.id,
+  });
+  if (error) {
+    if (error.message.includes("refund exceeds payment")) {
+      throw new Error(t("maxRefundableBefore") + t("maxRefundableAfter"));
+    }
+    throw new Error(error.message);
+  }
+  revalidatePath("/reception");
+}

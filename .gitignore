@@ -1,0 +1,7 @@
+node_modules/
+.next/
+.tools/
+.env*.local
+*.local
+.DS_Store
+.claude/skills/
