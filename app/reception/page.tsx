@@ -108,11 +108,11 @@ export default async function ReceptionPage() {
 
   const [{ data: clinic }, { data: staff }, { data: myProfile }] =
     await Promise.all([
-      supabase
-        .from("clinics")
-        .select("name, currency")
-        .eq("id", clinicId)
-        .single(),
+      // Every column, deliberately: naming `currency` explicitly makes the
+      // whole row 400 with "column clinics.currency does not exist" until
+      // migration 0002 is applied, which takes the clinic *name* down with
+      // it. Tighten this to explicit columns once 0002 is live everywhere.
+      supabase.from("clinics").select("*").eq("id", clinicId).single(),
       supabase
         .from("memberships")
         .select("user_id, default_session_minutes")
@@ -205,10 +205,10 @@ export default async function ReceptionPage() {
     };
   });
 
-  // Currency comes off the clinic row. The fallback covers only the window
-  // between deploying this code and applying migration 0002 — after that the
-  // column is not null.
-  const currency = clinic?.currency ?? "EGP";
+  // Currency comes off the clinic row. The fallback covers the window between
+  // deploying this code and applying migration 0002 — after that the column is
+  // not null.
+  const currency = (clinic as { currency?: string } | null)?.currency ?? "EGP";
   const showMoney = canSeeMoney(role);
 
   const attended = rows.filter((r) => r.status === "attended").length;
