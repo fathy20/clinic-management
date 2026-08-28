@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { Arc } from "@/components/ui/Arc";
 import { Button } from "@/components/ui/Button";
@@ -83,7 +84,13 @@ export function PatientRow({
       </div>
 
       <div style={{ minWidth: 0 }}>
-        <div className="pname">{row.patientName}</div>
+        <Link
+          href={`/patients/${row.patientId}`}
+          className="pname pname-link"
+          title={t("viewRecord")}
+        >
+          {row.patientName}
+        </Link>
         <div className="pmeta">
           <span>{row.therapistName}</span>
           <span className="dot" />

@@ -18,6 +18,16 @@
   --ink:        #17302A;
   --muted:      #5F726C;
   --line:       #E1E5E1;
+
+  /* Paper. The one medium in this product that is not themed: a printed
+     receipt is ink on white whichever theme the screen was in. These four are
+     the only tokens intentionally absent from the dark blocks below, which is
+     why they carry a comment saying so — an omission that looks like a
+     mistake gets "fixed" into one. */
+  --paper:      #FFFFFF;
+  --paper-ink:  #000000;
+  --paper-mute: #444444;
+  --paper-line: #999999;
   --line-soft:  #EAEDEA;
   --jade:       #2F6F62;
   --jade-wash:  #EAF1EE;
@@ -954,4 +964,947 @@ h3 {
   color: var(--muted);
   font-size: var(--step--1);
   line-height: 1.6;
+}
+
+/* ---------- top bar inner (shared by NavBar) ---------- */
+.topbar-inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 clamp(12px, 3vw, 32px);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+.navtabs {
+  display: flex;
+  gap: 4px;
+  margin-inline-start: auto;
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+}
+.navtab {
+  min-height: 30px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  transition: background 0.16s ease-out, color 0.16s ease-out;
+}
+.navtab:hover {
+  color: var(--ink);
+}
+.navtab.is-on {
+  background: var(--raised);
+  color: var(--ink);
+  box-shadow: var(--shadow-1);
+}
+
+/* ---------- week bar ---------- */
+.weekbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.weekbar .btn {
+  text-decoration: none;
+}
+.weekbar-right {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ---------- week grid ----------
+   Seven columns on a desktop, a scrollable strip on a phone. The day is the
+   unit reception thinks in, so the grid is day columns rather than an
+   hour-by-hour matrix — an empty 8am-to-8pm lattice is mostly whitespace. */
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 900px) {
+  .week {
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    grid-auto-columns: minmax(168px, 1fr);
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+}
+.weekday {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  min-height: 148px;
+}
+.weekday.is-today {
+  border-color: color-mix(in srgb, var(--jade) 45%, var(--line));
+  box-shadow: 0 0 0 3px var(--jade-wash);
+}
+.weekday-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 9px 10px 6px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.weekday-name {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.weekday-num {
+  font-size: var(--step-2);
+  font-weight: 600;
+  line-height: 1.1;
+}
+.weekday.is-today .weekday-num {
+  color: var(--jade);
+}
+.weekday-add {
+  min-width: 28px;
+  min-height: 28px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--step-1);
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.16s ease-out, color 0.16s ease-out;
+}
+.weekday-add:hover {
+  border-color: var(--jade);
+  color: var(--jade);
+}
+.weekday-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+}
+.weekday-empty {
+  margin: 0;
+  padding: 6px 2px;
+  color: var(--line);
+  text-align: center;
+}
+
+/* ---------- a booked slot ---------- */
+.slot {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  text-align: start;
+  padding: 7px 9px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--ground);
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  transition: border-color 0.16s ease-out, transform 0.12s ease-out;
+}
+.slot:hover {
+  border-color: var(--jade);
+}
+.slot:active {
+  transform: scale(0.985);
+}
+.slot-time {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.slot-name {
+  font-size: var(--step-0);
+  font-weight: 600;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slot-meta {
+  font-size: 0.6875rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slot.status-attended {
+  border-inline-start: 3px solid var(--jade);
+}
+.slot.status-no_show {
+  border-inline-start: 3px solid var(--brick);
+}
+.slot.status-cancelled {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+/* ---------- segmented control ---------- */
+.segmented {
+  display: flex;
+  gap: 3px;
+  background: var(--sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 3px;
+}
+.seg {
+  flex: 1;
+  min-height: 36px;
+  border: none;
+  border-radius: calc(var(--r-sm) - 2px);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--step--1);
+  font-weight: 600;
+  cursor: pointer;
+}
+.seg.is-on {
+  background: var(--raised);
+  color: var(--ink);
+  box-shadow: var(--shadow-1);
+}
+
+/* ---------- weekday picker ---------- */
+.daypicker {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.daypicker .day {
+  min-width: var(--tap);
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--step--1);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.16s ease-out, background 0.16s ease-out;
+}
+.daypicker .day.is-on {
+  background: var(--jade);
+  border-color: var(--jade);
+  color: var(--on-fill);
+}
+
+/* ---------- booking dry run ---------- */
+.previewbox {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  background: var(--ground);
+}
+.preview-ok {
+  margin: 0;
+  color: var(--jade);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+.preview-warn {
+  margin: 0;
+  color: var(--brick);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+.previewlist {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 176px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.previewlist li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: var(--step--1);
+  color: var(--muted);
+}
+.previewlist li.is-clash {
+  color: var(--brick);
+}
+.preview-why {
+  font-size: 0.6875rem;
+}
+
+/* ---------- patient name as a link into the record ---------- */
+.pname-link {
+  color: inherit;
+  text-decoration: none;
+  display: inline-block;
+  border-bottom: 1px solid transparent;
+}
+.pname-link:hover {
+  border-bottom-color: var(--jade);
+  color: var(--jade);
+}
+.sheetlinks {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sheetlinks .linkbtn {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* a result row that carries a trailing value */
+.result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-decoration: none;
+}
+
+/* ---------- the money-leak hero ----------
+   The first thing an owner sees. It is deliberately the loudest element on
+   the page: brick-washed, gold figure, and the list right there rather than
+   behind a link — the whole point is that it cannot be ignored. */
+.leakhero {
+  background: var(--raised);
+  border: 1px solid color-mix(in srgb, var(--brick) 26%, var(--line));
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 26px;
+  box-shadow: var(--shadow-2);
+}
+.leakhero-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 20px 22px;
+  background: var(--brick-wash);
+}
+.leakhero-total {
+  margin-top: 4px;
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  line-height: 1.05;
+}
+.leakhero-total .money {
+  font-size: inherit;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.leakhero-sub {
+  margin: 8px 0 0;
+  color: var(--ink);
+  font-size: var(--step-1);
+  font-weight: 500;
+}
+.leaklist {
+  display: flex;
+  flex-direction: column;
+}
+.leakrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 22px;
+  border-top: 1px solid var(--line-soft);
+  text-decoration: none;
+  color: inherit;
+}
+.leakrow:hover {
+  background: var(--ground);
+}
+.leakrow-name {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.leakrow-when {
+  color: var(--muted);
+  font-size: var(--step--1);
+  font-family: var(--data);
+}
+
+/* ---------- multi-line clinical fields ----------
+   A SOAP section is paragraphs, not a line. Height is fixed rather than
+   auto-growing so the four sections stay visible together — a clinician
+   comparing objective findings against the plan should not have to scroll. */
+.field.textarea {
+  height: auto;
+  min-height: 78px;
+  padding: 10px 13px;
+  line-height: 1.55;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* ---------- body chart ---------- */
+.bodychart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bodychart-legend {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.markpick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--step--1);
+  font-weight: 600;
+  cursor: pointer;
+}
+.markpick.is-on {
+  border-color: var(--ink);
+  color: var(--ink);
+  background: var(--raised);
+}
+.markdot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  flex: none;
+}
+.bodychart-views {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.bodyview {
+  margin: 0;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 8px;
+}
+.bodyview figcaption {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.bodysvg {
+  width: 100%;
+  height: auto;
+  display: block;
+  /* The chart is a target, so it must read as one. */
+  cursor: crosshair;
+  touch-action: manipulation;
+}
+.bodymark {
+  cursor: pointer;
+}
+
+/* ---------- region schematic ---------- */
+.anatomy {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 12px;
+}
+.anatomy svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.anatomy-label {
+  font-family: var(--body);
+  font-size: 9px;
+  fill: var(--muted);
+}
+.anatomy-label.is-on {
+  fill: var(--jade);
+  font-weight: 600;
+}
+
+/* ---------- guided examination ---------- */
+.examgrid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 1080px) {
+  .examgrid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+.phasetabs {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.phasetab {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--step--1);
+  font-weight: 600;
+  cursor: pointer;
+}
+.phasetab.is-on {
+  background: var(--jade);
+  border-color: var(--jade);
+  color: var(--on-fill);
+}
+.phasetab.is-done {
+  border-color: color-mix(in srgb, var(--jade) 40%, var(--line));
+  color: var(--jade);
+}
+.examstep {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 13px 15px;
+  margin-bottom: 8px;
+}
+.examstep.is-active {
+  border-color: var(--jade);
+  box-shadow: 0 0 0 3px var(--jade-wash);
+}
+.examstep-action {
+  font-weight: 600;
+  font-size: var(--step-1);
+  line-height: 1.35;
+}
+.examstep-examines {
+  color: var(--muted);
+  font-size: var(--step--1);
+  margin-top: 2px;
+}
+.examstep-input {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.yesno {
+  display: flex;
+  gap: 5px;
+}
+.yesno button {
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--step--1);
+  font-weight: 600;
+  cursor: pointer;
+}
+.yesno button.is-yes {
+  background: var(--brick-wash);
+  border-color: var(--brick);
+  color: var(--brick);
+}
+.yesno button.is-no {
+  background: var(--jade-wash);
+  border-color: var(--jade);
+  color: var(--jade);
+}
+.flaglist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.flagrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+  font-size: var(--step-0);
+  line-height: 1.5;
+}
+.flagrow:last-child {
+  border-bottom: none;
+}
+.flagrow input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--brick);
+}
+.flagrow.is-on {
+  color: var(--brick);
+  font-weight: 500;
+}
+
+/* ---------- patient portal ----------
+   Opened on a phone, from a WhatsApp message, by someone who is not a
+   clinician and will not come back to learn an interface. One column, large
+   type, no chrome, nothing to navigate. */
+.portal {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 22px 18px 56px;
+}
+.portal-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.portal-clinic {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+.portal-head h1 {
+  font-size: var(--step-3);
+  font-weight: 800;
+  margin: 2px 0 0;
+}
+.portal-strip {
+  display: flex;
+  gap: 1px;
+  background: var(--line-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+.portal-strip > div {
+  flex: 1;
+  background: var(--raised);
+  padding: 14px 16px;
+}
+.portal-strip .label {
+  display: block;
+  color: var(--muted);
+  font-size: var(--step--1);
+  margin-bottom: 4px;
+}
+.portal-strip strong {
+  font-size: var(--step-3);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.portal-block {
+  margin-bottom: 26px;
+}
+.portal-block h2 {
+  font-size: var(--step-2);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.portal-empty {
+  margin: 0;
+  color: var(--muted);
+  background: var(--sunken);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  line-height: 1.6;
+}
+.portal-visits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.portal-visits li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 13px 15px;
+  font-size: var(--step-1);
+}
+.portal-with {
+  color: var(--muted);
+  font-size: var(--step-0);
+}
+.portal-exercises {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: ex;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.portal-exercises li {
+  counter-increment: ex;
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 15px 17px;
+}
+.portal-exercises h3 {
+  font-size: var(--step-1);
+  font-weight: 700;
+  margin: 0;
+}
+.portal-exercises h3::before {
+  content: counter(ex) ". ";
+  color: var(--jade);
+}
+.portal-dose {
+  margin: 5px 0 0;
+  color: var(--jade);
+  font-weight: 600;
+  font-size: var(--step-0);
+}
+.portal-how {
+  margin: 8px 0 0;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+.portal-watch {
+  display: inline-block;
+  margin-top: 10px;
+  min-height: var(--tap);
+  line-height: var(--tap);
+  color: var(--jade);
+  font-weight: 600;
+  text-decoration: none;
+}
+.portal-privacy {
+  color: var(--muted);
+  font-size: var(--step--1);
+  line-height: 1.65;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 16px;
+}
+.portal-error {
+  margin: 56px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--step-1);
+  line-height: 1.7;
+}
+
+/* ============================================================
+   A printed document.
+   
+   The receipt is the only screen in the product that leaves the building on
+   paper, so it is the only one with a print stylesheet. Everything the screen
+   needs and paper does not — the action bar, the page ground, the card
+   shadow — is dropped at print time, and the ink is forced to black on white
+   because a dark-theme receipt would waste a cartridge and photocopy badly.
+   ============================================================ */
+
+.doc {
+  min-height: 100dvh;
+  background: var(--ground);
+  padding: clamp(16px, 4vw, 48px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.doc-actions {
+  width: min(100%, 640px);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.doc-error {
+  margin-top: 15dvh;
+  max-width: 44ch;
+  text-align: center;
+  color: var(--muted);
+  font-size: var(--step-1);
+  line-height: 1.7;
+}
+
+.doc-sheet {
+  width: min(100%, 640px);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: clamp(20px, 5vw, 40px);
+}
+
+.doc-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.doc-head h1 {
+  font-size: var(--step-2);
+  line-height: 1.25;
+  margin: 0;
+}
+
+.doc-kind {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: var(--step--1);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The document's identity. Tabular so a column of receipts aligns, and never
+   abbreviated — a receipt number that is hard to read back is not a number. */
+.doc-number {
+  margin-inline-start: auto;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--step-2);
+  color: var(--ink);
+}
+
+.doc-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px 24px;
+  margin: 24px 0;
+}
+
+.doc-meta dt {
+  color: var(--muted);
+  font-size: var(--step--1);
+  margin-bottom: 2px;
+}
+
+.doc-meta dd {
+  margin: 0;
+  font-size: var(--step-0);
+}
+
+.doc-lines {
+  width: 100%;
+  border-collapse: collapse;
+  border-top: 1px solid var(--line);
+}
+
+.doc-lines th,
+.doc-lines td {
+  padding: 12px 0;
+  text-align: start;
+  font-weight: 400;
+  border-bottom: 1px solid var(--line);
+}
+
+.doc-lines td {
+  text-align: end;
+  white-space: nowrap;
+}
+
+.doc-lines .doc-total th,
+.doc-lines .doc-total td {
+  padding-top: 18px;
+  border-bottom: none;
+}
+
+.doc-lines .doc-total th {
+  font-weight: 600;
+}
+
+.doc-foot {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--step--1);
+  line-height: 1.6;
+}
+
+@media print {
+  /* Paper has no theme. Forcing the ink means a receipt printed from the dark
+     theme is not a black rectangle. */
+  .doc,
+  .doc-sheet {
+    background: var(--paper);
+    color: var(--paper-ink);
+  }
+
+  .doc {
+    padding: 0;
+    min-height: 0;
+    display: block;
+  }
+
+  .doc-sheet {
+    width: auto;
+    max-width: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+
+  .doc-actions {
+    display: none;
+  }
+
+  .doc-kind,
+  .doc-meta dt,
+  .doc-foot {
+    color: var(--paper-mute);
+  }
+
+  .doc-head,
+  .doc-lines,
+  .doc-lines th,
+  .doc-lines td,
+  .doc-foot {
+    border-color: var(--paper-line);
+  }
+
+  /* The gold that means money on screen is unreadable in grey-scale, and a
+     printed amount has to be legible above everything else on the page. */
+  .money,
+  .money-lg {
+    color: var(--paper-ink);
+  }
 }

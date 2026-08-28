@@ -1,4 +1,3 @@
-import { Arc } from "@/components/ui/Arc";
 import { Money } from "@/components/ui/Money";
 import { createClient } from "@/lib/supabase/server";
 import { LOCALE, t } from "@/lib/strings";

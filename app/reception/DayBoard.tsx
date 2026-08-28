@@ -5,6 +5,7 @@ import { Arc } from "@/components/ui/Arc";
 import { Button } from "@/components/ui/Button";
 import { Money } from "@/components/ui/Money";
 import { markAttended, markNoShow } from "./actions";
+import { FindPatient } from "./FindPatient";
 import { PatientRow } from "./PatientRow";
 import { PaymentSheet } from "./PaymentSheet";
 import { RefundSheet } from "./RefundSheet";
@@ -250,6 +251,11 @@ export function DayBoard({
               setCursor(0);
             }}
           />
+          <FindPatient
+            clinicId={clinicId}
+            canSeeMoney={canSeeMoney}
+            currency={currency}
+          />
           <Button small onClick={() => setSheet({ kind: "walkin" })}>
             {t("addWalkIn")}
           </Button>
@@ -318,6 +324,7 @@ export function DayBoard({
         <WalkInSheet
           clinicId={clinicId}
           therapists={therapists}
+          canSeeMoney={canSeeMoney}
           onClose={() => setSheet(null)}
         />
       )}

@@ -18,10 +18,12 @@ type PackageOption = {
 export function WalkInSheet({
   clinicId,
   therapists,
+  canSeeMoney,
   onClose,
 }: {
   clinicId: string;
   therapists: Therapist[];
+  canSeeMoney: boolean;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -36,6 +38,7 @@ export function WalkInSheet({
   );
   const [packages, setPackages] = useState<PackageOption[]>([]);
   const [packageId, setPackageId] = useState("");
+  const [price, setPrice] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -85,6 +88,7 @@ export function WalkInSheet({
             : { name: name.trim(), phone: phone.trim() },
           packageId: packageId || null,
           durationMinutes: duration,
+          price: Number(price) || 0,
         });
         onClose();
       } catch (e) {
@@ -212,6 +216,21 @@ export function WalkInSheet({
           ))}
         </SelectField>
       )}
+
+      {canSeeMoney &&
+        (packageId ? (
+          <p className="hint">{t("packageCoversIt")}</p>
+        ) : (
+          <Field
+            amount
+            label={t("walkInPrice")}
+            hint={t("walkInPriceHint")}
+            inputMode="decimal"
+            placeholder="0.00"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+        ))}
 
       {error && <p className="formerror">{error}</p>}
     </Sheet>

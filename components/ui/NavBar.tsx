@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { t } from "@/lib/strings";
 
@@ -10,27 +11,34 @@ const ROLE_LABEL: Record<string, string> = {
   accountant: t("roleAccountant"),
 };
 
-export function TopBar({
+// The clinic-facing chrome: brand, the surfaces this user can reach, theme,
+// identity. TopBar in app/reception predates this and is kept for the
+// reception day view's own search affordance; new surfaces use this.
+export function NavBar({
   clinicName,
   userName,
   role,
+  active,
+  showMoney = false,
 }: {
   clinicName: string;
   userName: string;
   role: string;
+  active: "reception" | "schedule" | "finance" | "settings" | "clinical";
+  showMoney?: boolean;
 }) {
   const [dark, setDark] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const saved = (() => {
-      try {
-        return localStorage.getItem("clinicos-theme");
-      } catch {
-        return null;
-      }
-    })();
-    if (saved) setDark(saved === "dark");
-    else setDark(matchMedia("(prefers-color-scheme: dark)").matches);
+    let saved: string | null = null;
+    try {
+      saved = localStorage.getItem("clinicos-theme");
+    } catch {
+      // private window or blocked site data — fall back to the OS preference
+    }
+    setDark(
+      saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches
+    );
   }, []);
 
   function toggle() {
@@ -40,14 +48,13 @@ export function TopBar({
     try {
       localStorage.setItem("clinicos-theme", next ? "dark" : "light");
     } catch {
-      // private window or blocked site data — the toggle still works for
-      // this page load, it just won't be remembered.
+      // the toggle still works for this page load, it just is not remembered
     }
   }
 
   return (
     <header className="topbar">
-      <div className="shell" style={{ display: "flex", alignItems: "center", gap: 16, padding: 0, width: "100%" }}>
+      <div className="topbar-inner">
         <div className="brand">
           <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
             <path
@@ -61,22 +68,56 @@ export function TopBar({
           </svg>
           <div>
             <div className="brand-name">{clinicName}</div>
-            <div className="brand-sub">{t("receptionDay")}</div>
+            <div className="brand-sub">
+              {active === "clinical"
+                ? t("clinicalSubtitle")
+                : active === "finance"
+                ? t("financeSubtitle")
+                : active === "schedule"
+                  ? t("scheduleSubtitle")
+                  : t("receptionDay")}
+            </div>
           </div>
         </div>
 
-        <button
-          className="searchcue"
-          onClick={() => document.getElementById("queue-search")?.focus()}
-          type="button"
-        >
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="7" cy="7" r="4.6" stroke="currentColor" strokeWidth="1.6" />
-            <path d="M10.6 10.6L14 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-          <span>{t("searchTheDay")}</span>
-          <span className="kbd">/</span>
-        </button>
+        <nav className="navtabs">
+          <Link
+            href="/reception"
+            className={active === "reception" ? "navtab is-on" : "navtab"}
+          >
+            {t("receptionDay")}
+          </Link>
+          <Link
+            href="/schedule"
+            className={active === "schedule" ? "navtab is-on" : "navtab"}
+          >
+            {t("schedule")}
+          </Link>
+          {(role === "owner" || role === "therapist") && (
+            <Link
+              href="/clinical"
+              className={active === "clinical" ? "navtab is-on" : "navtab"}
+            >
+              {t("clinic")}
+            </Link>
+          )}
+          {showMoney && (
+            <Link
+              href="/finance"
+              className={active === "finance" ? "navtab is-on" : "navtab"}
+            >
+              {t("finance")}
+            </Link>
+          )}
+          {role === "owner" && (
+            <Link
+              href="/settings"
+              className={active === "settings" ? "navtab is-on" : "navtab"}
+            >
+              {t("settings")}
+            </Link>
+          )}
+        </nav>
 
         <button
           className="iconbtn"
@@ -107,7 +148,7 @@ export function TopBar({
         </button>
 
         <div className="who">
-          <div className="avatar">{userName.trim().charAt(0) || "؟"}</div>
+          <div className="avatar">{userName.trim().charAt(0) || "?"}</div>
           <div>
             <div className="who-name">{userName}</div>
             <div className="who-role">{ROLE_LABEL[role] ?? role}</div>

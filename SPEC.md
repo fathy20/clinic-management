@@ -156,6 +156,13 @@ tests/
 
 ## 6. Out of scope for this phase
 
+**This list is a record of what Phase 1 deliberately excluded, not a statement
+about what exists today.** Several items below were subsequently asked for
+directly and are built: clinical records, SOAP and outcome measures (Phase 6),
+the examination screen, and the patient portal (Phase 8). `STATUS.md` is the
+current picture; this section stays as written so the phase boundary is legible.
+Payroll, the RAG assistant, offline and multi-branch are still unbuilt.
+
 Ask before building any of these:
 
 - Scheduling week view, drag-to-move, clinician absence (Phase 3).

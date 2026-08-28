@@ -155,23 +155,42 @@ begin
     raise exception 'FAIL: clinic_role has no accountant value (0002 not applied)';
   end if;
 
-  -- The accountant sees the till; the therapist never does. Both the read
-  -- (qual) and the write (with_check) half of each policy are checked — one
-  -- of the two left open is the whole breach.
+  -- The accountant sees the till; the therapist never does. Asserted as
+  -- capability, not as policy naming: an earlier version of this test looked
+  -- for a policy called 'tenant' and broke the moment 0006 split the verbs
+  -- apart, while telling us nothing about who could actually read what.
   foreach tbl in array array['packages','payments','refunds'] loop
-    select pol.qual, pol.with_check into q, wc
-      from pg_policies pol
-      where pol.schemaname = 'public'
-        and pol.tablename = tbl
-        and pol.policyname = 'tenant';
-    if q is null or wc is null then
-      raise exception 'FAIL: % has no tenant policy with both halves', tbl;
+    -- some policy must admit the accountant to read
+    if not exists (
+      select 1 from pg_policies pol
+      where pol.schemaname = 'public' and pol.tablename = tbl
+        and pol.cmd in ('SELECT','ALL')
+        and pol.qual like '%accountant%'
+    ) then
+      raise exception 'FAIL: no policy lets the accountant read %', tbl;
     end if;
-    if q not like '%accountant%' or wc not like '%accountant%' then
-      raise exception 'FAIL: % policy does not include the accountant', tbl;
+
+    -- and no policy may name the therapist at all
+    if exists (
+      select 1 from pg_policies pol
+      where pol.schemaname = 'public' and pol.tablename = tbl
+        and (coalesce(pol.qual,'') like '%therapist%'
+          or coalesce(pol.with_check,'') like '%therapist%')
+    ) then
+      raise exception 'FAIL: a policy on % names the therapist', tbl;
     end if;
-    if q like '%therapist%' or wc like '%therapist%' then
-      raise exception 'FAIL: % policy names the therapist', tbl;
+  end loop;
+
+  -- After 0006, money is append-only: no policy anywhere may permit an
+  -- UPDATE or a DELETE on payments or refunds. This is the CLAUDE.md rule
+  -- that the database, not just the application, has to enforce.
+  foreach tbl in array array['payments','refunds'] loop
+    if exists (
+      select 1 from pg_policies pol
+      where pol.schemaname = 'public' and pol.tablename = tbl
+        and pol.cmd in ('UPDATE','DELETE','ALL')
+    ) then
+      raise exception 'FAIL: % is not append-only — a % policy exists', tbl, tbl;
     end if;
   end loop;
 

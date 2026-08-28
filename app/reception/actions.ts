@@ -23,7 +23,15 @@ export async function markAttended(appointmentId: string) {
     .from("appointments")
     .update({ status: "attended" })
     .eq("id", appointmentId);
-  if (error) throw new Error(error.message);
+  if (error) {
+    // 23514 is the packages check constraint: consume_package tried to push
+    // sessions_used past sessions_total. The raw message names the constraint
+    // and means nothing to a receptionist with a queue in front of her.
+    if (error.code === "23514" || /sessions_used/.test(error.message)) {
+      throw new Error(t("packageExhausted"));
+    }
+    throw new Error(error.message);
+  }
   revalidatePath("/reception");
 }
 
@@ -44,6 +52,7 @@ export async function addWalkIn(input: {
   newPatient?: { name: string; phone: string };
   packageId?: string | null;
   durationMinutes: number;
+  price?: number;
 }) {
   const { supabase } = await requireSession();
 
@@ -68,12 +77,20 @@ export async function addWalkIn(input: {
   const end = new Date(start.getTime() + input.durationMinutes * 60_000);
   const during = `[${start.toISOString()},${end.toISOString()})`;
 
+  // Without a price a walk-in is invisible to leaking_sessions, which filters
+  // on price > 0 — and the cash walk-in is the commonest transaction in an
+  // Egyptian clinic. A packaged session is zero because the package already
+  // paid for it; anything else carries what reception agreed at the desk.
+  // Computed here, in the server action, never trusted as a total.
+  const price = input.packageId ? 0 : Math.max(0, Number(input.price) || 0);
+
   const { error } = await supabase.from("appointments").insert({
     clinic_id: input.clinicId,
     patient_id: patientId,
     therapist_id: input.therapistId,
     during,
     package_id: input.packageId ?? null,
+    price,
   });
   if (error) {
     // exclusion_violation: the DB, not the UI, is what refused the overlap
@@ -184,4 +201,61 @@ export async function issueRefund(input: {
     throw new Error(error.message);
   }
   revalidatePath("/reception");
+}
+
+export type PatientHit = {
+  id: string;
+  name: string;
+  phone: string;
+  amountOwed: number;
+};
+
+// Clinic-wide patient lookup. The balance comes from patient_balances, which
+// is security_invoker — a therapist gets the patients and zero balances
+// rather than an error, and the caller decides whether to render money at all.
+export async function findPatients(
+  clinicId: string,
+  query: string
+): Promise<PatientHit[]> {
+  const { supabase } = await requireSession();
+  const trimmed = query.trim();
+  if (trimmed.length < 2) return [];
+
+  const pattern = `%${escapeLike(trimmed)}%`;
+  const isPhone = /^[0-9+\s-]+$/.test(trimmed);
+
+  const base = supabase
+    .from("patients")
+    .select("id, name, phone")
+    .eq("clinic_id", clinicId)
+    .order("name")
+    .limit(20);
+
+  const { data, error } = isPhone
+    ? await base.ilike("phone", pattern)
+    : await base.ilike("name", pattern);
+  if (error) throw new Error(error.message);
+
+  const rows = data ?? [];
+  if (rows.length === 0) return [];
+
+  const { data: balances } = await supabase
+    .from("patient_balances")
+    .select("patient_id, amount_owed")
+    .eq("clinic_id", clinicId)
+    .in(
+      "patient_id",
+      rows.map((r) => r.id)
+    );
+
+  const owed = new Map(
+    (balances ?? []).map((b) => [b.patient_id, Number(b.amount_owed)])
+  );
+
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    phone: r.phone,
+    amountOwed: owed.get(r.id) ?? 0,
+  }));
 }

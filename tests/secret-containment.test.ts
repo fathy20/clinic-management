@@ -71,7 +71,11 @@ describe("the secret key cannot reach a browser", () => {
       .split("\n")
       .filter((f) => /\.(ts|tsx|json|md|sql|css|js|mjs)$/.test(f));
     for (const f of tracked) {
-      const src = readFileSync(join(ROOT, f), "utf8");
+      // `git ls-files` still lists a file deleted in the working tree but not
+      // yet committed. A file that is gone cannot be leaking anything.
+      const full = join(ROOT, f);
+      if (!statSync(full, { throwIfNoEntry: false })) continue;
+      const src = readFileSync(full, "utf8");
       expect(src, `${f} contains a live secret key`).not.toMatch(/sb_secret_[A-Za-z0-9_-]+/);
     }
   });
