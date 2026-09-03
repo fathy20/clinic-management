@@ -1,0 +1,35 @@
+# Local development database only.
+# Production runs on Egyptian infrastructure per NFR-PRV-01.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: physioflow-db
+    environment:
+      POSTGRES_USER: physioflow_owner
+      POSTGRES_PASSWORD: local_dev_only
+      POSTGRES_DB: physioflow
+      TZ: UTC
+    ports:
+      - "55432:5432"
+    volumes:
+      - physioflow_pgdata:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U physioflow_owner -d physioflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: physioflow-redis
+    ports:
+      - "56379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  physioflow_pgdata:
